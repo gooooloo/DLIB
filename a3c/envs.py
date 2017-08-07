@@ -1,5 +1,6 @@
 import gym
 import logging
+from collections import deque
 import numpy as np
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -20,23 +21,6 @@ _N_AVERAGE = 100
 VSTR = 'V0'
 
 
-class MyLastN:
-    def __init__(self, n):
-        self._arr = []
-        self._n = n
-
-    def append(self, o):
-        self._arr.append(o)
-        if len(self._arr) > self._n:
-            self._arr.pop(0)
-
-    def average(self):
-        return np.average(self._arr) if len(self._arr) > 0 else 0
-
-    def last(self):
-        return self._arr[-1] if len(self._arr) > 0 else 0
-
-
 class MyEnv:
     def __init__(self, env):
         self._env = env
@@ -44,8 +28,8 @@ class MyEnv:
         self._ep_steps = 0
         self._ep_rewards = []
 
-        self._steps_last_n_eps = MyLastN(_N_AVERAGE)
-        self._rewards_last_n_eps = MyLastN(_N_AVERAGE)
+        self._steps_last_n_eps = deque(maxlen=_N_AVERAGE)
+        self._rewards_last_n_eps = deque(maxlen=_N_AVERAGE)
 
         self.spec = env.spec
         self.observation_space = env.observation_space
@@ -71,10 +55,10 @@ class MyEnv:
             self._rewards_last_n_eps.append(np.sum(self._ep_rewards))
 
             i['{}/ep_count'.format(VSTR)] = self._ep_count
-            i['{}/ep_steps'.format(VSTR)] = self._steps_last_n_eps.last()
-            i['{}/ep_rewards'.format(VSTR)] = self._rewards_last_n_eps.last()
-            i['{}/aver_steps_{}'.format(VSTR, _N_AVERAGE)] = self._steps_last_n_eps.average()
-            i['{}/aver_rewards_{}'.format(VSTR, _N_AVERAGE)] = self._rewards_last_n_eps.average()
+            i['{}/ep_steps'.format(VSTR)] = self._steps_last_n_eps[-1]
+            i['{}/ep_rewards'.format(VSTR)] = self._rewards_last_n_eps[-1]
+            i['{}/aver_steps_{}'.format(VSTR, _N_AVERAGE)] = np.average(self._steps_last_n_eps)
+            i['{}/aver_rewards_{}'.format(VSTR, _N_AVERAGE)] = np.average(self._rewards_last_n_eps)
 
             print(i)
 
